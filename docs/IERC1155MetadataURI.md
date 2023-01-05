@@ -1,0 +1,8 @@
+## `IERC1155MetadataURI`
+
+
+
+
+
+
+
