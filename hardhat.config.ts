@@ -1,5 +1,6 @@
 /* eslint-disable node/no-missing-import */
 import 'dotenv/config';
+import '@openzeppelin/hardhat-upgrades';
 import '@nomiclabs/hardhat-etherscan';
 import '@nomiclabs/hardhat-waffle';
 import '@typechain/hardhat';
@@ -30,12 +31,12 @@ const config: HardhatUserConfigPro = {
     },
     mainnet: {
       chainId: 1,
-      url: 'https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+      url: `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
       accounts: [privateKey],
     },
     polygon: {
       chainId: 137,
-      url: 'https://polygon-rpc.com/',
+      url: 'https://rpc.goerli.eth.gateway.fm',
       accounts: [privateKey],
     },
     binance: {
@@ -69,7 +70,7 @@ const config: HardhatUserConfigPro = {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYGONSCAN_API_KEY,
-      bsc:  process.env.BSCSCAN_API_KEY,
+      bsc: process.env.BSCSCAN_API_KEY,
       bscTestnet: process.env.BSCSCAN_API_KEY,
       polygonMumbai: process.env.POLYGONSCAN_API_KEY,
       goerli: process.env.ETHERSCAN_API_KEY,
