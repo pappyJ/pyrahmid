@@ -1,10 +1,12 @@
-import { ethers, network, upgrades } from 'hardhat';
+import { ethers, network } from 'hardhat';
 
 import { appendFileSync } from 'fs';
 
 import { join } from 'path';
 
 import { exit } from 'process';
+
+import { verify } from './verify';
 
 require('dotenv');
 
@@ -16,22 +18,27 @@ async function main() {
   console.log('DEPLOYER ACCOUNT BALANCE:', (await deployer.getBalance()).toString());
 
   // getting contract namespaces
-  const PYRAHMIDUPG = await ethers.getContractFactory('PYRAHMIDUPG');
+  const ContractFactory = await ethers.getContractFactory('PyrahmidAssetFactory');
 
-  const pYRAHMIDUPG = await upgrades.deployProxy(PYRAHMIDUPG, ['RealInit', 'RLI', 'https://...', '100'], {
-    initializer: 'initialize',
-  });
+  const AssetFactory = await ContractFactory.deploy();
 
-  await pYRAHMIDUPG.deployed();
+  const factoryAddress = await AssetFactory.deployed();
 
-  console.log('Pyrahmid Contract Factory DEPLOYED TO:', pYRAHMIDUPG.address);
+  // wait after 6 confirmations to verify properly
+  await factoryAddress.deployTransaction.wait(6);
+
+  // verify contract
+
+  await verify(factoryAddress.address, []);
+
+  console.log('Mola Airdrop Contract Factory DEPLOYED TO:', AssetFactory.address);
 
   const config = `
   NETWORK => ${network.name}
 
   =====================================================================
 
-  MLE Token ${pYRAHMIDUPG.address}
+  AssetFactory ${AssetFactory.address}
 
   =====================================================================
 
@@ -39,7 +46,7 @@ async function main() {
 
   const data = JSON.stringify(config);
 
-  appendFileSync(join(__dirname, '../contracts/addressBook.md'), JSON.parse(data));
+  appendFileSync(join(__dirname, '../../contracts/addressBook.md'), JSON.parse(data));
 }
 
 main()

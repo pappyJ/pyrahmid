@@ -15,7 +15,7 @@ async function main() {
   ]);
 }
 
-const verify = async (contractAddress: string, args: Array<String | boolean | number>) => {
+export const verify = async (contractAddress: string, args: Array<String | boolean | number>) => {
   console.log('Verifying contract...');
   try {
     await hardhat.run('verify:verify', {
