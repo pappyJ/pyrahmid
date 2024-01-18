@@ -15,6 +15,10 @@ contract PyrahmidAssetFactory is Context {
 
   address[] private assets;
 
+  constructor() {
+    Owner = msg.sender;
+  }
+
   modifier onlyOwner() {
     require(Owner == msg.sender, "Ownable: caller is not the owner");
     _;

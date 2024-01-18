@@ -42,11 +42,7 @@ interface IERC721 is IERC165 {
    * NFT by either {approve} or {setApprovalForAll}.
    */
 
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) external;
+  function safeTransferFrom(address from, address to, uint256 tokenId) external;
 
   function createCollectible(
     address from,
@@ -81,11 +77,7 @@ interface IERC20 {
    * Emits a {Transfer} event.
    */
 
-  function transferFrom(
-    address sender,
-    address recipient,
-    uint256 amount
-  ) external returns (bool);
+  function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 }
 
 contract TransferProxy {
@@ -116,13 +108,7 @@ contract TransferProxy {
     return true;
   }
 
-  function erc721mint(
-    IERC721 token,
-    address from,
-    string memory tokenURI,
-    address[] memory royalty,
-    uint256[] memory royaltyFee
-  ) external {
+  function erc721mint(IERC721 token, address from, string memory tokenURI, address[] memory royalty, uint256[] memory royaltyFee) external {
     token.createCollectible(from, tokenURI, royalty, royaltyFee);
   }
 
@@ -139,12 +125,7 @@ contract TransferProxy {
     }
   }
 
-  function erc721safeTransferFrom(
-    IERC721 token,
-    address from,
-    address to,
-    uint256 tokenId
-  ) external {
+  function erc721safeTransferFrom(IERC721 token, address from, address to, uint256 tokenId) external {
     token.safeTransferFrom(from, to, tokenId);
   }
 
@@ -160,13 +141,7 @@ contract TransferProxy {
     token.mintAndTransfer(from, to, _royaltyAddress, _royaltyfee, tokenURI, data);
   }
 
-  function erc721safeTransferFromBatch(
-    IERC721 token,
-    address from,
-    address to,
-    uint256 tokenIdInit,
-    uint256 qty
-  ) external {
+  function erc721safeTransferFromBatch(IERC721 token, address from, address to, uint256 tokenIdInit, uint256 qty) external {
     for (uint256 i = 0; i < qty; i++) {
       token.safeTransferFrom(from, to, tokenIdInit);
       tokenIdInit++;
@@ -188,12 +163,7 @@ contract TransferProxy {
     }
   }
 
-  function erc20safeTransferFrom(
-    IERC20 token,
-    address from,
-    address to,
-    uint256 value
-  ) external {
+  function erc20safeTransferFrom(IERC20 token, address from, address to, uint256 value) external {
     require(token.transferFrom(from, to, value), 'failure while transferring');
   }
 }
@@ -225,13 +195,6 @@ contract Trade {
     uint256 price;
   }
 
-  /* An ECDSA signature. */
-  struct Sign {
-    uint8 v;
-    bytes32 r;
-    bytes32 s;
-  }
-
   struct Order {
     address seller;
     address buyer;
@@ -252,11 +215,7 @@ contract Trade {
     _;
   }
 
-  constructor(
-    uint8 _buyerFee,
-    uint8 _sellerFee,
-    TransferProxy _transferProxy
-  ) {
+  constructor(uint8 _buyerFee, uint8 _sellerFee, TransferProxy _transferProxy) {
     buyerFeePermille = _buyerFee;
     sellerFeePermille = _sellerFee;
     transferProxy = _transferProxy;
@@ -290,33 +249,57 @@ contract Trade {
     return true;
   }
 
-  function getSigner(bytes32 hash, Sign memory sign) internal pure returns (address) {
-    return ecrecover(keccak256(abi.encodePacked('\x19Ethereum Signed Message:\n32', hash)), sign.v, sign.r, sign.s);
+  //get the encoded hash by packing locally signed asset data
+  function getMessageHash(address _signer, uint _amount, address _assetAddress, address _paymentAssetAddress) public pure returns (bytes32) {
+    return keccak256(abi.encodePacked(_signer, _amount, _assetAddress, _paymentAssetAddress));
   }
 
-  function verifySellerSign(
-    address seller,
-    uint256 tokenId,
-    uint256 amount,
-    address paymentAssetAddress,
-    address assetAddress,
-    Sign memory sign
-  ) internal pure {
-    bytes32 hash = keccak256(abi.encodePacked(assetAddress, tokenId, paymentAssetAddress, amount));
-    require(seller == getSigner(hash, sign), 'seller sign verification failed');
+  //injecting ethereum standard signed data signature
+  function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32) {
+    return keccak256(abi.encodePacked('\x19Ethereum Signed Message:\n32', _messageHash));
   }
 
-  function verifyBuyerSign(
-    address buyer,
-    uint256 tokenId,
-    uint256 amount,
-    address paymentAssetAddress,
-    address assetAddress,
-    uint256 qty,
-    Sign memory sign
-  ) internal pure {
-    bytes32 hash = keccak256(abi.encodePacked(assetAddress, tokenId, paymentAssetAddress, amount, qty));
-    require(buyer == getSigner(hash, sign), 'buyer sign verification failed');
+  function verify(
+    address _signer,
+    uint _amount,
+    address _assetAddress,
+    address _paymentAssetAddress,
+    bytes memory signature
+  ) public pure returns (bool) {
+    bytes32 messageHash = getMessageHash(_signer, _amount, _assetAddress, _paymentAssetAddress);
+    bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
+
+    return recoverSigner(ethSignedMessageHash, signature) == _signer;
+  }
+
+  function recoverSigner(bytes32 _ethSignedMessageHash, bytes memory _signature) public pure returns (address) {
+    (bytes32 r, bytes32 s, uint8 v) = splitSignature(_signature);
+
+    return ecrecover(_ethSignedMessageHash, v, r, s);
+  }
+
+  function splitSignature(bytes memory sig) public pure returns (bytes32 r, bytes32 s, uint8 v) {
+    require(sig.length == 65, 'invalid signature length');
+
+    assembly {
+      /*
+            First 32 bytes stores the length of the signature
+
+            add(sig, 32) = pointer of sig + 32
+            effectively, skips first 32 bytes of signature
+
+            mload(p) loads next 32 bytes starting at the memory address p into memory
+            */
+
+      // first 32 bytes, after the length prefix
+      r := mload(add(sig, 32))
+      // second 32 bytes
+      s := mload(add(sig, 64))
+      // final byte (first byte of the next 32 bytes)
+      v := byte(0, mload(add(sig, 96)))
+    }
+
+    // implicitly return (r, s, v)
   }
 
   function getFees(Order memory order) internal view returns (Fee memory) {
@@ -350,12 +333,7 @@ contract Trade {
     return Fee(platformFee, assetFee, royaltyAddress, royaltyFee, price);
   }
 
-  function tradeAsset(
-    Order calldata order,
-    Fee memory fee,
-    address buyer,
-    address seller
-  ) internal virtual {
+  function tradeAsset(Order calldata order, Fee memory fee, address buyer, address seller) internal virtual {
     if (order.nftType == BuyingAssetType.SINGLE) {
       transferProxy.erc721safeTransferFrom(IERC721(order.nftAddress), seller, buyer, order.tokenId);
     }
@@ -412,39 +390,42 @@ contract Trade {
     return true;
   }
 
-  function mintAndBuyAsset(Order calldata order, Sign calldata sign) external returns (bool) {
+  function mintAndBuyAsset(Order calldata order, bytes memory signature) external returns (bool) {
     Fee memory fee = getFees(order);
     require((fee.price >= order.unitPrice * order.qty), 'Paid invalid amount');
-    verifySellerSign(order.seller, order.tokenId, order.unitPrice, order.erc20Address, order.nftAddress, sign);
+    verify(order.seller, order.unitPrice, order.nftAddress, order.erc20Address, signature);
+
     address buyer = msg.sender;
     tradeAsset(order, fee, buyer, order.seller);
     emit BuyAsset(order.seller, order.tokenId, order.qty, msg.sender);
     return true;
   }
 
-  function mintAndExecuteBid(Order calldata order, Sign calldata sign) external returns (bool) {
+  function mintAndExecuteBid(Order calldata order, bytes memory signature) external returns (bool) {
     Fee memory fee = getFees(order);
     require((fee.price >= order.unitPrice * order.qty), 'Paid invalid amount');
-    verifyBuyerSign(order.buyer, order.tokenId, order.amount, order.erc20Address, order.nftAddress, order.qty, sign);
+    verify(order.buyer, order.unitPrice, order.nftAddress, order.erc20Address, signature);
     address seller = msg.sender;
     tradeAsset(order, fee, order.buyer, seller);
     emit ExecuteBid(order.seller, order.tokenId, order.qty, msg.sender);
     return true;
   }
 
-  function buyAsset(Order calldata order, Sign calldata sign) external returns (Fee memory) {
+  function buyAsset(Order calldata order, bytes memory signature) external returns (Fee memory) {
     Fee memory fee = getFees(order);
     require((fee.price >= order.unitPrice * order.qty), 'Paid invalid amount');
-    verifySellerSign(order.seller, order.tokenId, order.unitPrice, order.erc20Address, order.nftAddress, sign);
+
+    verify(order.seller, order.unitPrice, order.nftAddress, order.erc20Address, signature);
+
     address buyer = msg.sender;
     tradeAsset(order, fee, buyer, order.seller);
     emit BuyAsset(order.seller, order.tokenId, order.qty, msg.sender);
     return fee;
   }
 
-  function executeBid(Order calldata order, Sign calldata sign) external returns (bool) {
+  function executeBid(Order calldata order, bytes memory signature) external returns (bool) {
     Fee memory fee = getFees(order);
-    verifyBuyerSign(order.buyer, order.tokenId, order.amount, order.erc20Address, order.nftAddress, order.qty, sign);
+    verify(order.buyer, order.unitPrice, order.nftAddress, order.erc20Address, signature);
     address seller = msg.sender;
     tradeAsset(order, fee, order.buyer, seller);
     emit ExecuteBid(msg.sender, order.tokenId, order.qty, order.buyer);

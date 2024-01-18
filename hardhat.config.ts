@@ -44,11 +44,6 @@ const config: HardhatUserConfigPro = {
       url: 'https://bsc-dataseed1.ninicoin.io',
       accounts: [privateKey],
     },
-    goerli: {
-      chainId: 5,
-      url: 'https://rpc.ankr.com/eth_goerli',
-      accounts: [privateKey],
-    },
     mumbai: {
       chainId: 80001,
       url: 'https://rpc-mumbai.maticvigil.com',
@@ -58,6 +53,11 @@ const config: HardhatUserConfigPro = {
     tbinance: {
       chainId: 97,
       url: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
+      accounts: [privateKey],
+    },
+    sepolia: {
+      chainId: 11155111,
+      url: 'https://rpc.sepolia.org/',
       accounts: [privateKey],
     },
   },
@@ -74,6 +74,7 @@ const config: HardhatUserConfigPro = {
       bscTestnet: process.env.BSCSCAN_API_KEY,
       polygonMumbai: process.env.POLYGONSCAN_API_KEY,
       goerli: process.env.ETHERSCAN_API_KEY,
+      sepolia: process.env.ETHERSCAN_API_KEY,
     },
   },
   solidity: {

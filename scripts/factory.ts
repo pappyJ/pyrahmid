@@ -1,12 +1,10 @@
-import { ethers, network } from 'hardhat';
+import { ethers, run, network } from 'hardhat';
 
 import { appendFileSync } from 'fs';
 
 import { join } from 'path';
 
 import { exit } from 'process';
-
-import { verify } from './verify';
 
 require('dotenv');
 
@@ -48,6 +46,22 @@ async function main() {
 
   appendFileSync(join(__dirname, '../../contracts/addressBook.md'), JSON.parse(data));
 }
+
+const verify = async (contractAddress: string, args: Array<String | boolean | number>) => {
+  console.log('Verifying contract...');
+  try {
+    await run('verify:verify', {
+      address: contractAddress,
+      constructorArguments: args,
+    });
+  } catch (e: any) {
+    if (e.message.toLowerCase().includes('already verified')) {
+      console.log('Already Verified!');
+    } else {
+      console.log(e);
+    }
+  }
+};
 
 main()
   .then(() => exit(0))
