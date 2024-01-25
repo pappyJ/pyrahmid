@@ -24,6 +24,7 @@
     "deploy:mumbai": "hardhat run scripts/v2/polygon.ts --network mumbai",
     "deploy:tbinance": "hardhat run scripts/binance.ts --network tbinance",
     "deploy:sepolia": "hardhat run scripts/ethereum.ts --network sepolia",
+    "deploy:sepolia-factory": "hardhat run scripts/factory.ts --network sepolia",
     "deploy:polygon": "hardhat run scripts/polygon.ts --network polygon",
     "deploy:binance": "hardhat run scripts/binance.ts --network binance",
     "deploy:mainnet": "hardhat run scripts/ethereum.ts --network mainnet"

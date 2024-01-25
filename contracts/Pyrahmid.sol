@@ -48,11 +48,7 @@ library EnumerableMap {
     mapping(bytes32 => uint256) _indexes;
   }
 
-  function _set(
-    Map storage map,
-    bytes32 key,
-    bytes32 value
-  ) private returns (bool) {
+  function _set(Map storage map, bytes32 key, bytes32 value) private returns (bool) {
     uint256 keyIndex = map._indexes[key];
 
     if (keyIndex == 0) {
@@ -103,11 +99,7 @@ library EnumerableMap {
     return (entry._key, entry._value);
   }
 
-  function _get(
-    Map storage map,
-    bytes32 key,
-    string memory errorMessage
-  ) private view returns (bytes32) {
+  function _get(Map storage map, bytes32 key, string memory errorMessage) private view returns (bytes32) {
     uint256 keyIndex = map._indexes[key];
     require(keyIndex != 0, errorMessage); // Equivalent to contains(map, key)
     return map._entries[keyIndex - 1]._value; // All indexes are 1-based
@@ -117,11 +109,7 @@ library EnumerableMap {
     Map _inner;
   }
 
-  function set(
-    UintToAddressMap storage map,
-    uint256 key,
-    address value
-  ) internal returns (bool) {
+  function set(UintToAddressMap storage map, uint256 key, address value) internal returns (bool) {
     return _set(map._inner, bytes32(key), bytes32(uint256(uint160(value))));
   }
 
@@ -142,11 +130,7 @@ library EnumerableMap {
     return (uint256(key), address(uint160(uint256(value))));
   }
 
-  function get(
-    UintToAddressMap storage map,
-    uint256 key,
-    string memory errorMessage
-  ) internal view returns (address) {
+  function get(UintToAddressMap storage map, uint256 key, string memory errorMessage) internal view returns (address) {
     return address(uint160(uint256(_get(map._inner, bytes32(key), errorMessage))));
   }
 }
@@ -260,20 +244,11 @@ library Address {
     return size > 0;
   }
 
-  function functionCall(
-    address target,
-    bytes memory data,
-    string memory errorMessage
-  ) internal returns (bytes memory) {
+  function functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
     return functionCallWithValue(target, data, 0, errorMessage);
   }
 
-  function functionCallWithValue(
-    address target,
-    bytes memory data,
-    uint256 value,
-    string memory errorMessage
-  ) internal returns (bytes memory) {
+  function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal returns (bytes memory) {
     require(address(this).balance >= value, 'Address: insufficient balance for call');
     require(isContract(target), 'Address: call to non-contract');
 
@@ -281,11 +256,7 @@ library Address {
     return _verifyCallResult(success, returndata, errorMessage);
   }
 
-  function _verifyCallResult(
-    bool success,
-    bytes memory returndata,
-    string memory errorMessage
-  ) private pure returns (bytes memory) {
+  function _verifyCallResult(bool success, bytes memory returndata, string memory errorMessage) private pure returns (bytes memory) {
     if (success) {
       return returndata;
     } else {
@@ -354,17 +325,9 @@ interface IERC721 is IERC165 {
 
   function contractOwner() external view returns (address owner);
 
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) external;
+  function safeTransferFrom(address from, address to, uint256 tokenId) external;
 
-  function transferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) external;
+  function transferFrom(address from, address to, uint256 tokenId) external;
 
   function approve(address to, uint256 tokenId) external;
 
@@ -374,12 +337,7 @@ interface IERC721 is IERC165 {
 
   function isApprovedForAll(address owner, address operator) external view returns (bool);
 
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId,
-    bytes calldata data
-  ) external;
+  function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
 
   function mintAndTransfer(
     address from,
@@ -399,16 +357,13 @@ interface IERC721 is IERC165 {
 }
 
 interface IERC721Receiver {
-  function onERC721Received(
-    address operator,
-    address from,
-    uint256 tokenId,
-    bytes calldata data
-  ) external returns (bytes4);
+  function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external returns (bytes4);
 }
 
 interface IERC721Enumerable is IERC721 {
   function totalSupply() external view returns (uint256);
+
+  function maxSupply() external view returns (uint256);
 
   function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256 tokenId);
 
@@ -475,6 +430,8 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
 
   uint256 public tokenCounter;
 
+  uint256 private _maxSupply;
+
   bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
 
   bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
@@ -486,13 +443,10 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
     uint256[] rFee;
   }
 
-  constructor(
-    string memory name_,
-    string memory symbol_,
-    address _transferProxy
-  ) {
+  constructor(string memory name_, string memory symbol_, uint256 maxSupply_, address _transferProxy) {
     _name = name_;
     _symbol = symbol_;
+    _maxSupply = maxSupply_;
     Owner = msg.sender;
     transferProxy = _transferProxy;
     tokenCounter = 1;
@@ -572,6 +526,10 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
     return _tokenOwners.length();
   }
 
+  function maxSupply() external view virtual override returns (uint256) {
+    return _maxSupply;
+  }
+
   function tokenByIndex(uint256 index) external view virtual override returns (uint256) {
     (uint256 tokenId, ) = _tokenOwners.at(index);
     return tokenId;
@@ -617,21 +575,13 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
     return _operatorApprovals[owner][operator];
   }
 
-  function transferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) external virtual override {
+  function transferFrom(address from, address to, uint256 tokenId) external virtual override {
     require(_isApprovedOrOwner(_msgSender(), tokenId), 'ERC721: transfer caller is not owner nor approved');
 
     _transfer(from, to, tokenId);
   }
 
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) external virtual override {
+  function safeTransferFrom(address from, address to, uint256 tokenId) external virtual override {
     safeTransferFrom(from, to, tokenId, '');
   }
 
@@ -649,22 +599,12 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
         @param _data    Additional data with no specified format, MUST be sent unaltered in call to `onERC1155Received` on `_to`
     */
 
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId,
-    bytes memory _data
-  ) public virtual override {
+  function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public virtual override {
     require(_isApprovedOrOwner(_msgSender(), tokenId), 'ERC721: transfer caller is not owner nor approved');
     _safeTransfer(from, to, tokenId, _data);
   }
 
-  function _safeTransfer(
-    address from,
-    address to,
-    uint256 tokenId,
-    bytes memory _data
-  ) internal virtual {
+  function _safeTransfer(address from, address to, uint256 tokenId, bytes memory _data) internal virtual {
     _transfer(from, to, tokenId);
     require(_checkOnERC721Received(from, to, tokenId, _data), 'ERC721: transfer to non ERC721Receiver implementer');
   }
@@ -701,12 +641,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
     return newItemId;
   }
 
-  function _safeMint(
-    address to,
-    uint256 tokenId,
-    address[] memory _royaltyAddress,
-    uint256[] memory _royaltyFee
-  ) internal virtual {
+  function _safeMint(address to, uint256 tokenId, address[] memory _royaltyAddress, uint256[] memory _royaltyFee) internal virtual {
     _safeMint(to, tokenId, _royaltyAddress, _royaltyFee, '');
   }
 
@@ -723,6 +658,8 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
   }
 
   function _mint(address to, uint256 tokenId) internal virtual {
+    require(_tokenOwners.length() <= _maxSupply, 'ERC721: Number of tokens minted exceeds the maximum supply');
+
     require(to != address(0), 'ERC721: mint to the zero address');
     require(!_exists(tokenId), 'ERC721: token already minted');
 
@@ -763,11 +700,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
     emit Transfer(owner, address(0), tokenId);
   }
 
-  function _transfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal virtual {
+  function _transfer(address from, address to, uint256 tokenId) internal virtual {
     require(ERC721.ownerOf(tokenId) == from, 'ERC721: transfer of token that is not own'); // internal owner
     require(to != address(0), 'ERC721: transfer to the zero address');
 
@@ -801,12 +734,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
     emit tokenBaseURI(baseURI_);
   }
 
-  function _checkOnERC721Received(
-    address from,
-    address to,
-    uint256 tokenId,
-    bytes memory _data
-  ) private returns (bool) {
+  function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data) private returns (bool) {
     if (!to.isContract()) {
       return true;
     }
@@ -840,21 +768,13 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
     return itemId;
   }
 
-  function setRoyaltyFee(
-    uint256 tokenId,
-    address[] memory _royaltyAddress,
-    uint256[] memory _royaltyFee
-  ) internal returns (bool) {
+  function setRoyaltyFee(uint256 tokenId, address[] memory _royaltyAddress, uint256[] memory _royaltyFee) internal returns (bool) {
     royalty[tokenId].rAddress = _royaltyAddress;
     royalty[tokenId].rFee = _royaltyFee;
     return true;
   }
 
-  function _beforeTokenTransfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal virtual {}
+  function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual {}
 }
 
 contract PYRAHMID is ERC721 {
@@ -863,8 +783,9 @@ contract PYRAHMID is ERC721 {
   constructor(
     string memory tokenName,
     string memory tokenSymbol,
+    uint256 _maxSupply,
     address _transferProxy
-  ) ERC721(tokenName, tokenSymbol, _transferProxy) {}
+  ) ERC721(tokenName, tokenSymbol, _maxSupply, _transferProxy) {}
 
   modifier onlyOwner() {
     require(Owner == msg.sender, 'Ownable: caller is not the owner');

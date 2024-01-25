@@ -32,7 +32,7 @@ async function main() {
 
   await Trade.deployed();
 
-  const PYRAHMID = await PyrahmidFactory.deploy('PYRAHMID', 'PMD', TransferProxy.address);
+  const PYRAHMID = await PyrahmidFactory.deploy('PYRAHMID', 'PMD', `${1}`, TransferProxy.address);
 
   await PYRAHMID.deployed();
 

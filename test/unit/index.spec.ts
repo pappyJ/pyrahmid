@@ -26,7 +26,7 @@ describe('Asset Tokenisation Transactions', function () {
 
     await Trade.deployed();
 
-    const Pyrahmid = await PyrahmidFactory.deploy('PYRAHMID', 'PMD', TransferProxy.address);
+    const Pyrahmid = await PyrahmidFactory.deploy('PYRAHMID', 'PMD', 40, TransferProxy.address);
 
     await Pyrahmid.deployed();
 
@@ -139,8 +139,8 @@ describe('Asset Tokenisation Transactions', function () {
       signature
     );
 
-    const currentTokenIndex = await Pyrahmid.tokenCounter();
+    const currentTokenIndex = await Pyrahmid.totalSupply();
 
-    expect(currentTokenIndex.toString()).to.be.eql('41');
+    expect(currentTokenIndex.toString()).to.be.eql('40');
   });
 });

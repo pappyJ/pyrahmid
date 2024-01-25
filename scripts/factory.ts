@@ -29,7 +29,7 @@ async function main() {
 
   await verify(factoryAddress.address, []);
 
-  console.log('Mola Airdrop Contract Factory DEPLOYED TO:', AssetFactory.address);
+  console.log('Pyrahmid Asset Contract Factory DEPLOYED TO:', AssetFactory.address);
 
   const config = `
   NETWORK => ${network.name}
@@ -44,7 +44,7 @@ async function main() {
 
   const data = JSON.stringify(config);
 
-  appendFileSync(join(__dirname, '../../contracts/addressBook.md'), JSON.parse(data));
+  appendFileSync(join(__dirname, '../contracts/addressBook.md'), JSON.parse(data));
 }
 
 const verify = async (contractAddress: string, args: Array<String | boolean | number>) => {

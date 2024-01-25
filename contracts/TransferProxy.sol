@@ -37,11 +37,7 @@ interface IERC721 is IERC165 {
    * NFT by either {approve} or {setApprovalForAll}.
    */
 
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) external;
+  function safeTransferFrom(address from, address to, uint256 tokenId) external;
 
   function createCollectible(
     address from,
@@ -60,12 +56,18 @@ interface IERC721 is IERC165 {
   ) external returns (uint256);
 }
 
+interface IERC721Enumerable is IERC721 {
+  function totalSupply() external view returns (uint256);
+
+  function maxSupply() external view returns (uint256);
+
+  function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256 tokenId);
+
+  function tokenByIndex(uint256 index) external view returns (uint256);
+}
+
 interface IERC20 {
-  function transferFrom(
-    address sender,
-    address recipient,
-    uint256 amount
-  ) external returns (bool);
+  function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 }
 
 contract TransferProxy {
@@ -82,7 +84,7 @@ contract TransferProxy {
    */
 
   modifier onlyOwner() {
-    require(owner == msg.sender, "Ownable: caller is not the owner");
+    require(owner == msg.sender, 'Ownable: caller is not the owner');
     _;
   }
 
@@ -90,41 +92,32 @@ contract TransferProxy {
         @param newOwner : newOwner address */
 
   function transferOwnership(address newOwner) external onlyOwner returns (bool) {
-    require(newOwner != address(0), "Ownable: new owner is the zero address");
+    require(newOwner != address(0), 'Ownable: new owner is the zero address');
     emit OwnershipTransferred(owner, newOwner);
     owner = newOwner;
     return true;
   }
 
-  function erc721mint(
-    IERC721 token,
-    address from,
-    string memory tokenURI,
-    address[] memory royalty,
-    uint256[] memory royaltyFee
-  ) external {
+  function erc721mint(IERC721 token, address from, string memory tokenURI, address[] memory royalty, uint256[] memory royaltyFee) external {
     token.createCollectible(from, tokenURI, royalty, royaltyFee);
   }
 
   function erc721mintBatch(
-    IERC721 token,
+    IERC721Enumerable token,
     address from,
     string memory tokenURI,
     address[] memory royalty,
     uint256[] memory royaltyFee,
     uint256 qty
   ) external {
+    require(token.totalSupply() + qty <= token.maxSupply(), 'ERC721: Number of tokens minted exceeds the maximum supply');
+
     for (uint256 i = 0; i < qty; i++) {
       token.createCollectible(from, tokenURI, royalty, royaltyFee);
     }
   }
 
-  function erc721safeTransferFrom(
-    IERC721 token,
-    address from,
-    address to,
-    uint256 tokenId
-  ) external {
+  function erc721safeTransferFrom(IERC721 token, address from, address to, uint256 tokenId) external {
     token.safeTransferFrom(from, to, tokenId);
   }
 
@@ -140,13 +133,7 @@ contract TransferProxy {
     token.mintAndTransfer(from, to, _royaltyAddress, _royaltyfee, tokenURI, data);
   }
 
-  function erc721safeTransferFromBatch(
-    IERC721 token,
-    address from,
-    address to,
-    uint256 tokenIdInit,
-    uint256 qty
-  ) external {
+  function erc721safeTransferFromBatch(IERC721 token, address from, address to, uint256 tokenIdInit, uint256 qty) external {
     for (uint256 i = 0; i < qty; i++) {
       token.safeTransferFrom(from, to, tokenIdInit);
       tokenIdInit++;
@@ -154,7 +141,7 @@ contract TransferProxy {
   }
 
   function erc721mintAndTransferBatch(
-    IERC721 token,
+    IERC721Enumerable token,
     address from,
     address to,
     address[] memory _royaltyAddress,
@@ -163,17 +150,14 @@ contract TransferProxy {
     uint256 qty,
     bytes calldata data
   ) external {
+    require(token.totalSupply() + qty <= token.maxSupply(), 'ERC721: Number of tokens minted exceeds the maximum supply');
+
     for (uint256 i = 0; i < qty; i++) {
       token.mintAndTransfer(from, to, _royaltyAddress, _royaltyfee, tokenURI, data);
     }
   }
 
-  function erc20safeTransferFrom(
-    IERC20 token,
-    address from,
-    address to,
-    uint256 value
-  ) external {
-    require(token.transferFrom(from, to, value), "failure while transferring");
+  function erc20safeTransferFrom(IERC20 token, address from, address to, uint256 value) external {
+    require(token.transferFrom(from, to, value), 'failure while transferring');
   }
 }
