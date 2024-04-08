@@ -7,6 +7,7 @@
     "compile": "hardhat compile",
     "coverage": "hardhat coverage",
     "docs": "solidity-docgen --solc-module solc-0.8",
+    "slither": "python3 -m slither . --solc-remaps '@openzeppelin=node_modules/@openzeppelin @chainlink=node_modules/@chainlink' --exclude naming-convention,external-function,low-level-calls",
     "fork:node": "FORK=true hardhat node",
     "fork:script": "FORK=true hardhat run",
     "lint:check": "solhint 'contracts/**/*.sol' 'interfaces/**/*.sol' && prettier --check './**'",

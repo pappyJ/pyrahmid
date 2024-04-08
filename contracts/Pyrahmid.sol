@@ -635,9 +635,9 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
   ) external override returns (uint256) {
     require(transferProxy == msg.sender, "Operator: operator doesn't have the role");
     uint256 newItemId = tokenCounter;
+    tokenCounter = tokenCounter + 1;
     _safeMint(from, newItemId, _royalty, _royaltyFee);
     _setTokenURI(newItemId, _tokenURI);
-    tokenCounter = tokenCounter + 1;
     return newItemId;
   }
 
@@ -761,10 +761,10 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
   ) external virtual override returns (uint256) {
     require(msg.sender == transferProxy, 'ERC721: caller is not Approved');
     uint256 itemId = tokenCounter;
+    tokenCounter += 1;
     _safeMint(from, itemId, _royaltyAddress, _royaltyFee);
     _setTokenURI(itemId, _tokenURI);
     _safeTransfer(from, to, itemId, data);
-    tokenCounter += 1;
     return itemId;
   }
 

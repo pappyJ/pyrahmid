@@ -95,7 +95,7 @@ contract PyrahmidAssetFactory is Context {
   }
 
   function rescueAnyERC20Tokens(address _tokenAddr, address _to, uint256 _amount) public onlyOwner {
-    IERC20(_tokenAddr).transfer(_to, _amount);
+    require(IERC20(_tokenAddr).transfer(_to, _amount));
   }
 
   receive() external payable {}
